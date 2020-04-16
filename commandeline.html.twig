@@ -75,6 +75,47 @@
 
                 </div>
                 
+                <div class="col-md-10 offset-2">
+                <hr />
+                        <h1> liste des anciennes commande </h1>
+                <hr />
+
+                <table class="table">
+                    <thead  >
+                        <th>Commande </th>
+                        <th>Date </th>
+                        <th>Action </th>
+                    </thead>
+                    {% set i = 1 %}
+                    {% for comm in commandes %}
+                        {% if i == 1 %}
+
+                                    <tr>
+                                    
+                                        <td>{{ i }}  / La Commande Courante </td>
+                                        <td>{{ comm.dateCommand | date("m/d/Y") }}</td>
+                                        <td><a href="/Donation/product/commande/delete/{{ comm.idCommand }}" class="btn btn-danger" onclick="confirm('Voulez vous supprimer la commande ')" >Supprimer </a> </td>
+                                    
+                                    </tr>
+                        {% else %}
+
+                                    <tr>
+
+                                        <td>{{ i }} </td>
+                                        <td>{{ comm.dateCommand | date("m/d/Y") }}</td>
+                                        <td><a href="/Donation/product/commande/delete/{{ comm.idCommand }}" class="btn btn-danger" onclick="confirm('Voulez vous supprimer la commande ')" >Supprimer </a> </td>
+                                    
+                                    </tr>
+                        
+                        {% endif %}
+                    {% set i = i + 1 %}
+                    {% endfor  %}
+                    <tbody>
+                    </tbody>
+                </table>
+
+                </div>
+                
 
              
               

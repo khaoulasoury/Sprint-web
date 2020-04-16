@@ -1,6 +1,9 @@
 <?php
 
 namespace DonationBundle\Controller;
+use DonationBundle\Entity\Action;
+use DonationBundle\Form\ActionType;
+use UserBundle\Entity\User;
 use DonationBundle\Entity\Product;
 use DonationBundle\Entity\Association;
 use DonationBundle\Entity\Admin;
@@ -21,7 +24,7 @@ class ProductsController extends Controller
     
     
     public function ListeProductsAction()
-    {
+    {   
         if ($this->getUser() == null ){
             return $this->redirect("/login");
         }
@@ -30,11 +33,13 @@ class ProductsController extends Controller
                 ->getRepository(Product::class)
                 ->findAll();
         if ($this->getUser()->getRoles()[0] == "ROLE_USER" ){
-            return $this->render('products/users/index.html.twig',['products' => $products,
+            return $this->render('@Donation/Products/User/index.html.twig',['products' => $products,
+                        'connectedAssociation' => null,
                         'connected' => $this->getUser()]
             );
         }else{
-            return $this->render('products/admin/index.html.twig',['products' => $products,
+            return $this->render('@Donation/Products/Admin/index.html.twig',['products' => $products,
+                        'connectedAssociation' => null,
                         'connected' => $this->getUser()]
             );
         }
@@ -43,25 +48,25 @@ class ProductsController extends Controller
     public function AddProductAction()
     {
 
-        
+
         $associations = $this->getDoctrine()
-        ->getRepository(Association::class)
-        ->findAll();
-        return $this->render('products/admin/ajout.html.twig',[
-                        "associations"=> $associations,
-                        'connected' => $this->getUser()]
+            ->getRepository(Association::class)
+            ->findAll();
+        return $this->render('@Donation/Products/Admin/ajout.html.twig',[
+                "associations"=> $associations,
+                'connected' => $this->getUser()]
         );
     }
 
- 
+
 
     public function AddProductDbAction(Request $request ){
         if ($request->isMethod('POST')) {
             //$form->submit($request->request->get($form->getName()));
-    
+
             /*if ($form->isSubmitted() && $form->isValid()) {
                 // perform some action...
-    
+
                 return $this->redirectToRoute('task_success');
             }*/
             $entityManager = $this->getDoctrine()->getManager();
@@ -72,12 +77,12 @@ class ProductsController extends Controller
             $product->setpriceProduct($request->request->get("prixproduct"));
             $product->setdescriptionProduct($request->request->get("descriptionproduct"));
             $association = $this->getDoctrine()
-                    ->getRepository(Association::class)
-                    ->find($request->request->get("idassociation"));
+                ->getRepository(Association::class)
+                ->find($request->request->get("idassociation"));
             $admin  = $this->getDoctrine()
-                    ->getRepository(Admin::class)
-                    ->find($this->getUser()->getId());
-            $product->setidAdmin($admin);       
+                ->getRepository(Admin::class)
+                ->find($this->getUser()->getId());
+            $product->setidAdmin($admin);
             $product->setidAssociation($association);
             $entityManager->persist($product);
             $entityManager->flush();
@@ -98,7 +103,7 @@ class ProductsController extends Controller
         $associations = $this->getDoctrine()
         ->getRepository(Association::class)
         ->findAll();
-        return $this->render('products/admin/edit.html.twig',['product' => $product,
+        return $this->render('@Donation/Products/Admin/edit.html.twig',['product' => $product,
                         "associations"=> $associations,
                         'connected' => $this->getUser()]
         );
@@ -154,7 +159,7 @@ class ProductsController extends Controller
         $commandes = $this->getDoctrine()
                     ->getRepository(Command::class)
                     ->find($id);
-        return $this->render('products/users/commande.html.twig',['product' => $product,  
+        return $this->render('@Donation/Products/User/commande.html.twig',['product' => $product,  
                      'connected' => $this->getUser()]
 );
 
@@ -170,10 +175,13 @@ class ProductsController extends Controller
             $commande->setquantityProduct($request->request->get("qteproduct"));
             $commande->setpaid($request->request->get("paid"));
             $commande->setdateCommand( new \DateTime(date("Y-m-d")) );
-
+            $iduser = $this->getUser()->getId();
+            $user = $this->getDoctrine()
+                    ->getRepository(User::class)
+                    ->find($iduser);
+            $commande->setuser($user);
             $entityManager->persist($commande);
             $entityManager->flush();
-
             $product = $this->getDoctrine()
                     ->getRepository(Product::class)
                     ->find($request->request->get("idproduct"));
@@ -194,11 +202,16 @@ class ProductsController extends Controller
         $command = $this->getDoctrine()
                     ->getRepository(Command::class)
                     ->find($id);
+        $commandes = $this->getDoctrine()
+                    ->getRepository(Command::class)
+                    ->findBy([ 'user' => $this->getUser()->getId() ]);
+                    
         $product = $this->getDoctrine()
                     ->getRepository(Product::class)
                     ->find($command->getidProduct());
-        return $this->render('products/users/commandeline.html.twig',['command' => $command,
-        'product' => $product,  
+        return $this->render('@Donation/Products/User/commandeline.html.twig',['command' => $command,
+                          'commandes' => $commandes ,
+                          'product' => $product,  
                           'connected' => $this->getUser()]
 );
         
@@ -228,7 +241,9 @@ class ProductsController extends Controller
 
             $entityManager->persist($commandeline);
             $entityManager->flush();
-            return $this->redirect("/Donation/print/".$commandeline->getidCommandline());
+
+
+            return $this->redirect("/Donation/product/stripe/".$commandeline->getidCommandline());
 
 
 
@@ -239,7 +254,7 @@ class ProductsController extends Controller
         $commande = $this->getDoctrine()
             ->getRepository(CommandLine::class)
             ->find($id);
-            return $this->render('products/users/print.html.twig',['cl' => $commande,  
+            return $this->render('@Donation/Products/User/print.html.twig',['cl' => $commande,  
             'connected' => $this->getUser()]
 );
 
@@ -253,7 +268,7 @@ class ProductsController extends Controller
         $product= $this->getDoctrine()
         ->getRepository(Product::class)
         ->find($id);
-        return $this->render('products/admin/taux.html.twig',['cl' => $commandes,
+        return $this->render('@Donation/Products/Admin/taux.html.twig',['cl' => $commandes,
         'p' => $product,  
         'connected' => $this->getUser()]
 ); 
@@ -267,7 +282,7 @@ class ProductsController extends Controller
             ->getRepository(Product::class)
             ->find($commande->getidProduct());
             
-        return $this->render('products/users/editcommande.html.twig',['commande' => $commande,'product' => $product,  
+        return $this->render('@Donation/Products/User/editcommande.html.twig',['commande' => $commande,'product' => $product,  
         'connected' => $this->getUser()]
         );
     }
@@ -301,6 +316,13 @@ class ProductsController extends Controller
         return $this->redirect("/Donation/product/commandline/".$commande->getidCommand());
             
     }
+
+    public function StripeAction($id){
+        return $this->render('@Donation/Products/User/stripe.html.twig',[
+                'id' => $id ,
+                'connected' => $this->getUser()]);
+
+    }
     
     public function searchAction(Request $request){
         $encoders = array(new XmlEncoder(), new JsonEncoder());
@@ -319,6 +341,28 @@ class ProductsController extends Controller
         $jsonContent = $serializer->serialize($products, 'json');
         return new Response($jsonContent);
 
+    }
+    public function  DeleteCommandeAction($id){
+        $entityManager = $this->getDoctrine()->getManager();
+        $command = $this->getDoctrine()
+                        ->getRepository(Command::class)
+                        ->find($id);
+         //$product->delete();
+         
+         $commandlines = $this->getDoctrine()
+                ->getRepository(Commandline::class)
+                ->findBy([ 'idCommand' => $command ]);
+
+         $entityManager->remove($command);
+         foreach($commandlines as $commandline){
+             $entityManager->remove($commandline);
+         }
+
+         $entityManager->flush();
+         return $this->redirect("/Donation/products");
+
+        
+    
     }
     public function  triAction(Request $request){
         $em = $this->getDoctrine()->getManager();
@@ -349,11 +393,13 @@ class ProductsController extends Controller
        
     
 
-        return $this->render('products/users/index.html.twig',['products' => $entities,
+        return $this->render('@Donation/Products/User/index.html.twig',['products' => $entities,
                 'connected' => $this->getUser()]
         );
 
     }
+
+    
    
 
 }
